@@ -1,50 +1,50 @@
-# Welcome to your Expo app 👋
+# 🧬 Signal Forge: Forensic Biometric Workstation 
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Signal Forge** is a high-performance, full-stack forensic workstation. This repository contains both the central analytics dashboard and the mobile terminal interface.
 
-## Get started
+---
 
-1. Install dependencies
+## 🚀 Quick Start Guide (Commands)
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### 💻 1. Web Dashboard (eda-insight)
+Use these commands to run the analytics workstation on your browser.
 ```bash
-npm run reset-project
-```
+# Navigate to the folder
+cd eda-insight
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+# Install dependencies
+npm install
 
-## Learn more
+# Run in Development Mode
+npm run dev
 
-To learn more about developing your project with Expo, look at the following resources:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
 
-## Join the community
+## 📱 Subject Mobile: Field Operations Manual
 
-Join our community of developers creating universal apps.
+The `subject-mobile` app serves as the primary biometric ingestion point. It is designed for high-stress field environments where rapid "subject-to-workstation" pairing is required.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 🔐 1. Authentication & Login
+* **Access Level:** Requires Forensic Level 1 Authorization.
+* **Process:** Users must log in via the secure mobile terminal to establish a session. This session is then cryptographically linked to the `eda-insight` dashboard via a secure handshake.
+
+### 🤝 2. The "Two-Finger" Biometric Connection
+This is the core biometric capture logic of the workstation.
+* **Where we use it:** Inside the "Capture" module of the mobile app.(use expo go)
+* **The Logic:** The system requires a dual-point touch (Two-Finger Connection) to stabilize the biometric signal. 
+* **Purpose:** This reduces "noise" in the EDA (Electrodermal Activity) readings. By placing two fingers on the sensor interface, the app creates a complete circuit, allowing for a refined telemetry stream.
+* **Visual Feedback:** The UI utilizes real-time haptic feedback and SVG-based wave animations to confirm when the connection is "Locked."
+
+### 📡 3. Real-Time Sync
+* Once the Two-Finger Connection is established, the mobile app streams the raw biometric data directly to the **Signal Forge Dashboard** (`eda-insight`).
+* **Hardware Simulation:** If no physical sensors are present, the app utilizes a high-fidelity ML-simulation to mock realistic biometric fluctuations based on touch pressure.
+
+# Navigate to the folder
+cd subject-mobile
+
+# Install dependencies
+npm install
+
+# Start Expo Go
+npx expo start
+
