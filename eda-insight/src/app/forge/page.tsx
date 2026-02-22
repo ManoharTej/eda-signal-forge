@@ -465,11 +465,11 @@ export default function ForensicForge() {
           <motion.div initial={{ opacity: 0, scale: 0.9, y: 50 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 50 }}
             className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none p-10"
           >
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto" onClick={() => setIsLabConfigOpen(false)} />
-            <div className="w-[600px] bg-[#0f172a]/95 border border-emerald-500/30 rounded-[50px] shadow-[0_0_100px_rgba(16,185,129,0.2)] pointer-events-auto overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="absolute inset-0 bg-black/60 pointer-events-auto" onClick={() => setIsLabConfigOpen(false)} />
+            <div className="w-[600px] bg-[#020617] border border-emerald-500/30 rounded-[50px] shadow-[0_40px_100px_rgba(0,0,0,0.9)] pointer-events-auto overflow-hidden flex flex-col max-h-[85vh] relative z-20">
               <div className="p-10 border-b border-white/5 flex justify-between items-center bg-emerald-600/10">
                 <div className="flex items-center gap-4">
-                  <div className="bg-emerald-600 p-3 rounded-2xl shadow-lg shadow-emerald-500/20">
+                  <div className="bg-emerald-600 p-3 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.3)]">
                     <Layers size={24} className="text-white" />
                   </div>
                   <div>
@@ -491,9 +491,9 @@ export default function ForensicForge() {
                         setSelectedTechs(prev => prev.includes(algo.id) ? (prev.length > 1 ? prev.filter(t => t !== algo.id) : prev) : [...prev, algo.id]);
                         resetSelection();
                       }}
-                      className={`p-6 rounded-[32px] border transition-all text-left relative group ${selectedTechs.includes(algo.id) ? 'bg-emerald-600/10 border-emerald-500/50 shadow-lg' : 'bg-white/5 border-white/5 hover:border-white/20'}`}
+                      className={`p-6 rounded-[32px] border transition-all text-left relative group ${selectedTechs.includes(algo.id) ? 'bg-emerald-600/10 border-emerald-500/50' : 'bg-white/5 border-white/5 hover:border-white/20'}`}
                     >
-                      <div className={`w-3 h-3 rounded-full absolute top-6 right-6 ${selectedTechs.includes(algo.id) ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-slate-700'}`} />
+                      <div className={`w-3 h-3 rounded-full absolute top-6 right-6 ${selectedTechs.includes(algo.id) ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-slate-700'}`} />
                       <h4 className={`text-[11px] font-black uppercase tracking-widest mb-2 ${selectedTechs.includes(algo.id) ? 'text-white' : 'text-slate-500'}`}>{algo.name}</h4>
                       <p className="text-[8px] text-slate-500 font-bold leading-relaxed opacity-60 group-hover:opacity-100">{algo.desc}</p>
                     </button>
@@ -501,7 +501,7 @@ export default function ForensicForge() {
                 </div>
               </div>
 
-              <div className="p-8 bg-black/40 border-t border-white/5 text-center px-10">
+              <div className="p-8 bg-[#0f172a] border-t border-white/5 text-center px-10">
                 <div className="flex gap-4">
                   <button
                     onClick={() => setIsLabConfigOpen(false)}
@@ -528,7 +528,7 @@ export default function ForensicForge() {
       <AnimatePresence>
         {isAuditorOpen && stage === 'laboratory' && (
           <motion.div initial={{ opacity: 0, y: 100, scale: 0.9, x: 50 }} animate={{ opacity: 1, y: 0, scale: 1, x: 0 }} exit={{ opacity: 0, y: 100, scale: 0.9, x: 50 }}
-            className="fixed bottom-28 right-8 w-[400px] h-[600px] bg-[#0f172a]/95 border border-blue-500/30 rounded-[40px] shadow-[0_0_50px_rgba(0,0,0,0.5)] backdrop-blur-3xl z-[100] flex flex-col overflow-hidden border-b-4 border-b-blue-600"
+            className="fixed bottom-28 right-8 w-[440px] h-[78vh] bg-[#020617]/95 border border-blue-500/30 rounded-[50px] shadow-[0_40px_100px_rgba(0,0,0,0.8)] backdrop-blur-3xl z-[100] flex flex-col overflow-hidden border-b-2 border-b-blue-600/50"
           >
             <div className="p-8 border-b border-white/5 flex justify-between items-center bg-blue-600/5">
               <div className="flex items-center gap-4">
@@ -553,14 +553,22 @@ export default function ForensicForge() {
                     <div className="p-8 pt-12">
                       <table className="w-full text-[9px] uppercase font-black tracking-widest">
                         <thead>
-                          <tr className="text-slate-500 border-b border-white/5">
-                            <th className="pb-4">Rank</th>
-                            <th className="pb-4">Configuration</th>
-                            <th className="pb-4 text-center">Stability</th>
-                            <th className="pb-4 text-right">Score</th>
+                          <tr className="text-slate-500 border-b border-white/5 text-[8px]">
+                            <th className="pb-4 text-left">Rank</th>
+                            <th className="pb-4 text-left">Config</th>
+                            <th className="pb-4 text-center">Stab</th>
+                            <th className="pb-4 text-center">Smooth</th>
+                            <th className="pb-4 text-center">Clean</th>
+                            <th className="pb-4 text-right relative group cursor-help">
+                              Score
+                              <div className="absolute top-6 right-0 w-36 bg-[#7c3aed] border border-white/20 p-3 rounded-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none shadow-2xl z-50 text-[7px] text-white font-mono normal-case tracking-tight leading-relaxed">
+                                Neural Logic Weighting:<br />
+                                <span className="text-[10px] text-purple-200 mt-1 block">(Stab × 10) + Smooth</span>
+                              </div>
+                            </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-white/5 font-mono text-[8px]">
                           {auditReports
                             .filter(r => !r.error)
                             .sort((a, b) => {
@@ -568,18 +576,23 @@ export default function ForensicForge() {
                               const scoreB = b.total_score || (b.metrics.stability_index * 10 + b.metrics.smoothness_score);
                               return scoreB - scoreA;
                             })
-                            .slice(0, 30) // Show up to 30 ranked models
                             .map((r, idx) => (
-                              <tr key={r.id} className={`${idx === 0 ? 'text-emerald-400' : 'text-slate-400'} hover:bg-white/[0.02] transition-all`}>
-                                <td className="py-4 font-mono">{idx === 0 ? <Award size={12} className="inline mr-2" /> : `#${idx + 1}`}</td>
-                                <td className="py-4">
-                                  <div className="flex gap-1 flex-wrap">
-                                    <span className="text-white/60">[{r.mode}]</span>
-                                    {r.techs.map((t: any) => <span key={t} className="opacity-40">{t}</span>)}
+                              <tr key={r.id} className={`${idx === 0 ? 'bg-emerald-400/10 border-l-2 border-emerald-500' : ''} hover:bg-white/[0.05] transition-all group`}>
+                                <td className={`py-3 pl-3 ${idx === 0 ? 'text-emerald-400 font-black' : 'text-slate-500'}`}>
+                                  {idx === 0 ? <Award size={10} className="inline mr-1" /> : `#${idx + 1}`}
+                                </td>
+                                <td className="py-3">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className={`text-[7px] font-black uppercase tracking-tighter ${r.mode === 'hybrid' ? 'text-emerald-500' : 'text-blue-500'}`}>{r.mode} (T-{r.id})</span>
+                                    <div className="flex gap-1 flex-wrap text-white/40">
+                                      {r.techs.slice(0, 2).map((t: any) => <span key={t}>[{t.toUpperCase()}]</span>)}
+                                    </div>
                                   </div>
                                 </td>
-                                <td className="py-4 text-center font-mono">{r.metrics.stability_index.toFixed(2)}</td>
-                                <td className="py-4 text-right font-mono text-white">
+                                <td className="py-3 text-center text-purple-400/80">{(r.metrics.stability_index ?? 0).toFixed(1)}</td>
+                                <td className="py-3 text-center text-amber-400/80">{r.metrics.smoothness_score?.toFixed(0)}%</td>
+                                <td className="py-3 text-center text-blue-400/80">{(r.metrics.noise_suppression / 10).toFixed(1)}k</td>
+                                <td className="py-3 text-right text-white pr-3 font-black text-[10px] group-hover:text-emerald-400 transition-colors">
                                   {(r.total_score || (r.metrics.stability_index * 10 + r.metrics.smoothness_score)).toFixed(1)}
                                 </td>
                               </tr>
@@ -629,18 +642,19 @@ export default function ForensicForge() {
               )}
             </div>
 
-            {/* FIXED VERDICT FOOTER "OUT OF THE BOX" */}
-            <div className="p-8 bg-[#0f172a] border-t-2 border-blue-500/30 backdrop-blur-3xl shrink-0 mt-auto shadow-[0_-20px_50px_rgba(0,0,0,0.5)] relative z-20">
-              <div className="absolute -top-3.5 left-10 px-4 py-1.5 bg-blue-600 rounded-full text-[8px] font-black uppercase tracking-widest text-white shadow-xl flex items-center gap-2">
-                <MessageSquare size={12} /> Final Forensic Verdict
+            {/* FIXED VERDICT FOOTER "OUT OF THE BOX" AESTHETIC */}
+            <div className="p-8 bg-[#020617] border-t-2 border-blue-600/30 backdrop-blur-3xl shrink-0 mt-auto shadow-[0_-20px_60px_rgba(0,0,0,0.95)] relative z-50">
+              <div className="absolute -top-3.5 left-10 px-5 py-2 bg-blue-600 rounded-full text-[9px] font-black uppercase tracking-[0.3em] text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                Neural Verdict
               </div>
-              <div className="flex items-start gap-4 pt-4">
-                <p className="text-[12px] text-blue-100 font-bold italic leading-relaxed">
+              <div className="pt-4">
+                <p className="text-[13px] text-blue-100 font-bold italic leading-relaxed">
                   {auditReports.some(r => r.error)
-                    ? "Scientist, I detected communication lag with the ML core. Major data drop-out—ensure the Neural Bridge (Backend) is active."
+                    ? "Scientist, a neural synchronization error occurred. Re-initiate the bridge."
                     : bestTrialId
-                      ? `Scientist, analysis complete. Trial #${bestTrialId} achieved peak reconstruction. The **${auditReports.find(r => r.id === bestTrialId)?.mode.toUpperCase()}** configuration is currently dominant.`
-                      : "Collecting forensic telemetry... perform a reconstruction or full benchmark to see model rankings."
+                      ? `Verification complete. Trial #${bestTrialId} identified as the **${auditReports.find(r => r.id === bestTrialId)?.mode.toUpperCase()}** champion. Signal stability is verified.`
+                      : "Awaiting telemetry input... Benchmark all combinations for cognitive dominance."
                   }
                 </p>
               </div>
