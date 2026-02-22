@@ -1,8 +1,10 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import numpy as np
+import os
 from ml_engine import engine
 
 app = FastAPI(title="Signal Forge Forensic Lab Backend")
@@ -67,6 +69,7 @@ class TelemetryLog(BaseModel):
     HF_Energy: float
     Entropy: float
     Motion: float
+    Timestamp: str
 
 @app.post("/log_telemetry")
 async def log_telemetry(data: TelemetryLog):
@@ -97,6 +100,21 @@ async def benchmark(input_data: BenchmarkInput):
         return {"results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/download_csv")
+async def download_csv():
+    """
+    Export the persistent telemetry database for external forensic auditing.
+    """
+    file_path = "telemetry_database.csv"
+    if os.path.exists(file_path):
+        return FileResponse(
+            path=file_path,
+            filename="SIGNAL_FORGE_EXPORT.csv",
+            media_type="text/csv"
+        )
+    else:
+        raise HTTPException(status_code=404, detail="Forensic Vault is empty. No data logged yet.")
 
 @app.post("/live_reconstruct")
 async def live_reconstruct(input_data: dict):

@@ -485,7 +485,8 @@ export default function ForensicWorkstationMonolith() {
                 Slope_Max: Math.max(...diffs, 0),
                 HF_Energy: entropy * 1.5, // Proxy for HF energy
                 Entropy: entropy,
-                Motion: edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? 1.0 : 0.0
+                Motion: edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? 1.0 : 0.0,
+                Timestamp: new Date().toLocaleString('en-GB')
               };
 
               try {
@@ -955,9 +956,18 @@ export default function ForensicWorkstationMonolith() {
                 <TableIcon size={24} className="text-blue-500" />
                 <span className="text-[18px] font-black uppercase tracking-widest text-white italic leading-none">Forensic Matrix</span>
               </div>
-              <div className="flex items-center gap-3 bg-black/60 px-4 py-1.5 rounded-[1rem] border border-slate-800">
-                <span className="text-[9px] text-blue-500 font-black uppercase italic tracking-[0.1em] leading-none">5S CYCLE</span>
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_15px_#3b82f6]" />
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => window.open('http://127.0.0.1:8000/download_csv', '_blank')}
+                  className="flex items-center gap-3 bg-blue-600/10 border border-blue-500/30 px-5 py-2 rounded-xl hover:bg-blue-600 transition-all group shadow-lg"
+                >
+                  <Download size={14} className="text-blue-500 group-hover:text-white transition-colors" />
+                  <span className="text-[10px] text-blue-500 group-hover:text-white font-black uppercase tracking-widest leading-none transition-colors">Export Vault</span>
+                </button>
+                <div className="flex items-center gap-3 bg-black/60 px-4 py-1.5 rounded-[1rem] border border-slate-800">
+                  <span className="text-[9px] text-blue-500 font-black uppercase italic tracking-[0.1em] leading-none">5S CYCLE</span>
+                  <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_15px_#3b82f6]" />
+                </div>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar">
