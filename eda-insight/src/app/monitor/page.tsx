@@ -464,8 +464,43 @@ export default function ForensicWorkstationMonolith() {
               metrics: mlResult.metrics
             }, ...prev].slice(0, 10));
 
+            // --- AUTOMATED ML DATA LOGGING PROTOCOL ---
+            const logToDatabase = async () => {
+              const window = phasicRawBuffer.slice(-30);
+              const m = phasicRawBuffer.reduce((a, b) => a + b, 0) / phasicRawBuffer.length;
+              const variance = phasicRawBuffer.reduce((a, b) => a + Math.pow(b - m, 2), 0) / phasicRawBuffer.length;
+              const diffs = window.slice(1).map((v, i) => Math.abs(v - window[i]));
+
+              const telemetryPayload = {
+                User_ID: passport.name,
+                Age: passport.age,
+                Gen: passport.sex,
+                BSR: 1.0 / (edaInput || 0.1),
+                Win: 5,
+                EDA_Mean: m,
+                EDA_Std: Math.sqrt(variance),
+                SCL_Tonic: m,
+                SCR_Peaks: window.filter(v => v > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS).length,
+                SCR_Amp: Math.max(...window) - Math.min(...window),
+                Slope_Max: Math.max(...diffs, 0),
+                HF_Energy: entropy * 1.5, // Proxy for HF energy
+                Entropy: entropy,
+                Motion: edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? 1.0 : 0.0
+              };
+
+              try {
+                await fetch('http://127.0.0.1:8000/log_telemetry', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(telemetryPayload)
+                });
+              } catch (e) { console.warn("Log Node Offline"); }
+            };
+
+            logToDatabase();
+
             lastTableUpdate.current = timeRefMark;
-            pushVaultLog(`Matrix Latch: ${edaInput.toFixed(4)}μS [STABILITY: ${mlResult.metrics.stability_index.toFixed(1)}]`, edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? 'WARN' : 'DATA');
+            pushVaultLog(`Matrix Latch: ${edaInput.toFixed(4)}μS [STABILITY: ${mlResult.metrics.stability_index.toFixed(1)}] // Persistence: SECTOR_CSV`, edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? 'WARN' : 'DATA');
           }
         } else if (dataPayload && dataPayload.handshake !== sessionCode && stage === 1) {
           pushVaultLog("Link Volatility: Sync Failure.", 'WARN');
@@ -930,18 +965,22 @@ export default function ForensicWorkstationMonolith() {
                 <thead className="sticky top-0 bg-[#0d1117] text-slate-700 border-b-2 border-slate-800 z-10 font-black uppercase tracking-tighter italic">
                   <tr>
                     <th className="p-4">TS</th>
-                    <th className="p-4">μS</th>
+                    <th className="p-4">RAW μS</th>
+                    <th className="p-4">REFINED</th>
                     <th className="p-4">MEAN</th>
                     <th className="p-4">ENTR</th>
-                    <th className="p-4">STAB</th>
+                    <th className="p-4 text-right">STAB</th>
                   </tr>
                 </thead>
                 <tbody>
                   {telemetryMatrix.map((f) => (
                     <tr key={f.id} className={`border-b border-slate-800/10 transition-all duration-300 ${f.raw_μS > 2.0 ? 'bg-red-500/10' : 'hover:bg-white/[0.04]'}`}>
                       <td className="p-4 text-slate-600 font-black italic tracking-tighter uppercase leading-none">{f.timestamp}</td>
-                      <td className={`p-4 font-black italic text-md ${f.raw_μS > 2.0 ? 'text-red-500 animate-pulse' : 'text-white'}`}>
+                      <td className={`p-4 font-black italic text-md ${f.raw_μS > 2.0 ? 'text-red-500' : 'text-slate-400'}`}>
                         {(f.raw_μS ?? 0).toFixed(3)}
+                      </td>
+                      <td className="p-4 font-black italic text-emerald-400">
+                        {(f.refined_μS ?? 0).toFixed(3)}
                       </td>
                       <td className="p-4 text-slate-500 font-black italic leading-none">
                         {(f.tonicMean ?? 0).toFixed(3)}

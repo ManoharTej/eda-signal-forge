@@ -180,7 +180,8 @@ export default function ForensicForge() {
       const updatedData = data.map((d, i) => ({
         ...d,
         SCL_Tonic: result.refined_data[i],
-        Motion: Math.abs(result.refined_data[i] - d.EDA_Mean) > 0.1 ? 1 : 0
+        // SYNC WITH BACKEND SENSITIVITY: Lowered to 0.01
+        Motion: Math.abs(result.refined_data[i] - d.EDA_Mean) > 0.01 ? 1 : 0
       }));
 
       setData(updatedData);
@@ -225,9 +226,9 @@ export default function ForensicForge() {
         body: JSON.stringify({ raw_data: eadMeans })
       });
       if (!res.ok) throw new Error("Benchmark failed");
-      const results = await res.json();
+      const benchmarkResults = await res.json();
 
-      const benchmarkTrials = results.map((r: any, idx: number) => ({
+      const benchmarkTrials = (benchmarkResults.results || []).map((r: any, idx: number) => ({
         id: `B-${idx + 1}`,
         mode: r.mode,
         techs: r.techs,
@@ -382,7 +383,15 @@ export default function ForensicForge() {
                           <tr key={row.Win} onMouseEnter={() => setHoveredRow(row)} className={`matrix-row group transition-all cursor-crosshair hover:bg-white/[0.03] ${row.Win === hoveredRow?.Win ? 'bg-blue-600/10' : ''}`}>
                             <td className="p-5 font-mono opacity-40 italic">{row.User_ID}</td>
                             <td className="p-5 text-center font-black">{row.Win}</td>
-                            <td className="p-5 text-center font-mono text-blue-400">{row.EDA_Mean.toFixed(4)}</td>
+                            <td className="p-5 text-center font-mono transition-all">
+                              {showCleansed ? (
+                                <span className={row.EDA_Mean !== row.SCL_Tonic ? "text-emerald-400 font-black" : "text-blue-400"}>
+                                  {row.SCL_Tonic.toFixed(4)}
+                                </span>
+                              ) : (
+                                <span className="text-blue-400">{row.EDA_Mean.toFixed(4)}</span>
+                              )}
+                            </td>
                             <td className="p-5 text-center font-mono opacity-70">{row.SCR_Peaks}</td>
                             <td className="p-5 text-center font-mono text-purple-400">{row.Entropy.toFixed(3)}</td>
                             <td className="p-5 text-center font-mono opacity-50">{row.HF_Energy.toFixed(4)}</td>
@@ -689,9 +698,42 @@ function XYPlotWithLabels({ data, showCleansed, setHoveredRow }: { data: EDAData
     original: d
   }));
 
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * width;
+
+    // Find nearest point based on X coordinate
+    let nearest = points[0];
+    let minDist = Math.abs(points[0].x - mouseX);
+
+    points.forEach(p => {
+      const d = Math.abs(p.x - mouseX);
+      if (d < minDist) {
+        minDist = d;
+        nearest = p;
+      }
+    });
+
+    if (minDist < 50) { // Snap range
+      setActiveTip(nearest.original);
+      setHoveredRow(nearest.original);
+    } else {
+      setActiveTip(null);
+    }
+  };
+
   return (
     <div className="relative w-full h-full min-h-0">
-      <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} className="overflow-visible w-full h-full">
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${width} ${height}`}
+        className="overflow-visible w-full h-full cursor-crosshair"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setActiveTip(null)}
+      >
+        <rect width={width} height={height} fill="transparent" />
         {[0, 0.25, 0.5, 0.75, 1].map((v) => (
           <g key={v}>
             <text x={padding - 30} y={height - padding - (v * (height - 2 * padding))} fill="rgba(255,255,255,0.2)" fontSize="8" textAnchor="end" className="font-mono">{(v * maxEDA).toFixed(1)}</text>
@@ -701,13 +743,26 @@ function XYPlotWithLabels({ data, showCleansed, setHoveredRow }: { data: EDAData
         <motion.path d={`M ${points.map(p => `${p.x},${p.yRaw}`).join(" L ")}`} fill="none" stroke={showCleansed ? "rgba(239, 68, 68, 0.15)" : "#ef4444"} strokeWidth="2.5" />
         {showCleansed && <motion.path initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} d={`M ${points.map(p => `${p.x},${p.yClean}`).join(" L ")}`} fill="none" stroke="#10b981" strokeWidth="5" strokeLinecap="round" className="drop-shadow-[0_0_15px_rgba(16,185,129,0.4)]" />}
         {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={showCleansed ? p.yClean : p.yRaw} r="4" fill={showCleansed ? "#10b981" : (p.original.Motion === 1 ? "#ef4444" : "#3b82f6")}
-            onMouseEnter={() => { setActiveTip(p.original); setHoveredRow(p.original); }} onMouseLeave={() => setActiveTip(null)} className="cursor-crosshair transition-all hover:scale-150" />
+          <circle
+            key={i}
+            cx={p.x}
+            cy={showCleansed ? p.yClean : p.yRaw}
+            r={activeTip?.Win === p.original.Win ? 8 : 4}
+            fill={showCleansed ? "#10b981" : (p.original.Motion === 1 ? "#ef4444" : "#3b82f6")}
+            className="transition-all duration-200 pointer-events-none"
+          />
         ))}
       </svg>
       <AnimatePresence>
         {activeTip && (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="absolute z-50 p-6 bg-[#0f172a] border border-blue-500/40 rounded-3xl shadow-2xl pointer-events-none backdrop-blur-2xl" style={{ left: padding + 30, top: 40 }}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300, mass: 0.5 }}
+            className="absolute z-50 p-6 bg-[#0f172a]/90 border border-blue-500/40 rounded-3xl shadow-2xl pointer-events-none backdrop-blur-2xl"
+            style={{ left: padding + 30, top: 40 }}
+          >
             <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest mb-1 italic">Win {activeTip.Win}</p>
             <p className="text-3xl font-mono font-black text-white">{activeTip.EDA_Mean.toFixed(4)} <span className="text-[10px] text-slate-500 uppercase ml-1">μS</span></p>
           </motion.div>

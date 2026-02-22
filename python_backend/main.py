@@ -52,6 +52,40 @@ async def analyze(input_data: AnalysisInput):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class TelemetryLog(BaseModel):
+    User_ID: str
+    Age: str
+    Gen: str
+    BSR: float
+    Win: int
+    EDA_Mean: float
+    EDA_Std: float
+    SCL_Tonic: float
+    SCR_Peaks: int
+    SCR_Amp: float
+    Slope_Max: float
+    HF_Energy: float
+    Entropy: float
+    Motion: float
+
+@app.post("/log_telemetry")
+async def log_telemetry(data: TelemetryLog):
+    """
+    Automatically appends telemetry features to a persistent CSV for ML training.
+    """
+    import pandas as pd
+    import os
+    
+    file_path = "telemetry_database.csv"
+    new_row = data.dict()
+    df = pd.DataFrame([new_row])
+    
+    # Append to CSV, create header only if file is new
+    header = not os.path.exists(file_path)
+    df.to_csv(file_path, mode='a', index=False, header=header)
+    
+    return {"status": "Logged", "file": file_path}
+
 @app.post("/benchmark")
 async def benchmark(input_data: BenchmarkInput):
     """

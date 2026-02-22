@@ -7,6 +7,9 @@ from sklearn.decomposition import PCA
 from scipy import signal
 from typing import List, Dict, Any
 
+import os
+import pandas as pd
+
 class ForensicMLEngine:
     def __init__(self):
         # Cache for historical data (for CUL-v4)
@@ -33,10 +36,16 @@ class ForensicMLEngine:
         reduction = float(np.sum(np.abs(raw - refined)))
         
         # 3. Discrete Shannon Entropy (Stable Index)
-        hist, _ = np.histogram(refined, bins=10)
-        probs = hist / np.sum(hist)
-        probs = probs[probs > 0]
-        entropy = float(-np.sum(probs * np.log2(probs)))
+        # Use a fixed bin range [min(data), max(data)] or global biometric range
+        # For small data, we use 10 bins over the local range but handle 0-variance
+        data_range = np.max(refined) - np.min(refined)
+        if data_range < 0.0001:
+            entropy = 0.0
+        else:
+            hist, _ = np.histogram(refined, bins=10)
+            probs = hist / np.sum(hist)
+            probs = probs[probs > 0]
+            entropy = float(-np.sum(probs * np.log2(probs)))
         
         # Final Scrub and Rounding
         res = {
@@ -48,77 +57,122 @@ class ForensicMLEngine:
 
     def cul_v4_logic(self, data: np.ndarray) -> np.ndarray:
         """
-        Contrastive Unsupervised Learning v4.
-        Contrasts current window against a global anchor.
+        Modified for Instant Forensic Cleaning:
+        If no anchor exists, it creates one from the median of the current batch
+        and immediately performs the cleaning pass.
         """
+        # Reset anchor context for fresh batch if needed, or use existing for drift
+        current_median = np.median(data)
         if self.history_anchor is None:
-            self.history_anchor = np.mean(data)
-            return data
+            self.history_anchor = current_median
         
-        # Calculate contrastive distance
+        # Calculate contrastive distance from anchor
         distance = np.abs(data - self.history_anchor)
-        threshold = np.std(data) * 2 + 0.1
         
+        # Aggressive Threshold: 1.5 standard deviations + micro-floor
+        threshold = np.std(data) * 1.5 + 0.001
+        
+        # Perform the Heal
         refined = np.where(distance > threshold, self.history_anchor, data)
-        # Update anchor slowly (Slow baseline drift)
-        self.history_anchor = 0.95 * self.history_anchor + 0.05 * np.mean(refined)
+        
+        # Update anchor with slow temporal drift for next packet
+        self.history_anchor = 0.9 * self.history_anchor + 0.1 * np.mean(refined)
         return refined
 
     def run_solo(self, technique: str, data: np.ndarray) -> np.ndarray:
         """
-        Executes a specific unsupervised technique.
+        Executes a specific unsupervised technique with aggressive forensic tuning.
         """
         data_reshaped = data.reshape(-1, 1)
         refined = data.copy()
+        window_median = np.median(data)
 
         try:
             if technique == "gmm":
-                model = GaussianMixture(n_components=2).fit(data_reshaped)
-                # Pick the cluster with the lower mean as the baseline
+                # GMM is inherently aggressive, keeping current logic
+                model = GaussianMixture(n_components=2, random_state=42).fit(data_reshaped)
                 means = model.means_.flatten()
                 baseline_cluster = np.argmin(means)
                 labels = model.predict(data_reshaped)
                 refined = np.where(labels != baseline_cluster, means[baseline_cluster], data)
 
             elif technique == "kmeans":
-                model = KMeans(n_components=2, n_init='auto').fit(data_reshaped)
-                means = model.cluster_centers_.flatten()
-                baseline_cluster = np.argmin(means)
-                labels = model.labels_
-                refined = np.where(labels != baseline_cluster, means[baseline_cluster], data)
+                # INDESTRUCTIBLE NUMPY K-MEANS: Bypassing Sklearn for 1D Biometric Precision
+                # We force two clusters starting at the absolute Min/Max
+                c1, c2 = np.min(data), np.max(data)
+                
+                # If Min and Max are the same, no cleaning needed
+                if np.abs(c1 - c2) < 0.001:
+                    refined = data
+                else:
+                    # Forced 10-iteration Centroid Refinement
+                    for _ in range(10):
+                        # Assign labels based on Euclidean proximity in 1D
+                        labels = np.array([0 if np.abs(x - c1) < np.abs(x - c2) else 1 for x in data])
+                        
+                        # Update centroids if clusters are non-empty
+                        cluster0 = data[labels == 0]
+                        cluster1 = data[labels == 1]
+                        
+                        if len(cluster0) > 0: c1 = np.mean(cluster0)
+                        if len(cluster1) > 0: c2 = np.mean(cluster1)
+                    
+                    # IDENTIFY TRUTH: The Baseline cluster is mathematically closer to the MEDIAN
+                    baseline_med = np.median(data)
+                    baseline_cluster = 0 if np.abs(c1 - baseline_med) < np.abs(c2 - baseline_med) else 1
+                    baseline_val = c1 if baseline_cluster == 0 else c2
+                    
+                    # EXTREME HEAL: Snap all artifact-cluster points to the Human Baseline center
+                    refined = np.where(labels != baseline_cluster, baseline_val, data)
 
             elif technique == "dbscan":
-                # Points with label -1 are noise
-                model = DBSCAN(eps=0.3, min_samples=2).fit(data_reshaped)
-                refined = np.where(model.labels_ == -1, np.median(data), data)
+                # LOWER EPS: Very sensitive to local density jumps
+                model = DBSCAN(eps=0.03, min_samples=2).fit(data_reshaped)
+                refined = np.where(model.labels_ == -1, window_median, data)
 
             elif technique == "iso_forest":
-                model = IsolationForest(contamination=0.1).fit(data_reshaped)
-                preds = model.predict(data_reshaped) # -1 is anomaly
-                refined = np.where(preds == -1, np.median(data), data)
+                # HIGHER CONTAMINATION: Attacks outliers more aggressively
+                model = IsolationForest(contamination=0.15, random_state=42).fit(data_reshaped)
+                preds = model.predict(data_reshaped)
+                refined = np.where(preds == -1, window_median, data)
 
             elif technique == "lof":
-                model = LocalOutlierFactor(n_neighbors=5, contamination=0.1)
+                # LOCAL DENSITY SENSITIVITY
+                model = LocalOutlierFactor(n_neighbors=min(len(data)//2, 5), contamination=0.15)
                 preds = model.fit_predict(data_reshaped)
-                refined = np.where(preds == -1, np.median(data), data)
+                refined = np.where(preds == -1, window_median, data)
 
             elif technique == "pca":
-                model = PCA(n_components=1).fit(data_reshaped)
-                recon = model.inverse_transform(model.transform(data_reshaped)).flatten()
-                refined = recon
+                # REFINED TRAJECTORY SMOOTHING
+                window_size = 4
+                if len(data) > window_size:
+                    hankel = np.array([data[i:i + window_size] for i in range(len(data) - window_size + 1)])
+                    pca_model = PCA(n_components=1)
+                    low_dim = pca_model.fit_transform(hankel)
+                    recon_hankel = pca_model.inverse_transform(low_dim)
+                    
+                    refined_p = data.copy()
+                    for i in range(len(recon_hankel)):
+                        # Weighted averaging for trend preservation
+                        refined_p[i:i+window_size] = (refined_p[i:i+window_size] * 0.3) + (recon_hankel[i] * 0.7)
+                    refined = refined_p
 
             elif technique == "cul":
                 refined = self.cul_v4_logic(data)
 
-        except Exception:
-            pass # Fallback to original data if model fails on small sample
+        except Exception as e:
+            print(f"Algorithm Error: {str(e)}")
+            pass 
 
         return refined
 
     def run_hybrid(self, techniques: List[str], data: np.ndarray) -> np.ndarray:
         """
-        Ensemble Voting Logic.
+        Consensus Logic: Aggregated healing.
         """
+        # Always reset anchor for fresh analysis window in Forge mode
+        self.history_anchor = None
+        
         if not techniques:
             return data
             
@@ -126,14 +180,14 @@ class ForensicMLEngine:
         for tech in techniques:
             individual_results.append(self.run_solo(tech, data))
         
-        # Majority Vote: If a point is altered by > 50% of models, use the median of models
         individual_results = np.array(individual_results)
-        # Check where models diverted from raw data
-        divergence = np.abs(individual_results - data) > 0.1
+        
+        # HYPER-SENSITIVE CONSENSUS: If ANY model heals a point by > 0.005, it counts
+        divergence = np.abs(individual_results - data) > 0.005
         vote_count = np.sum(divergence, axis=0)
         
-        consensus_threshold = len(techniques) / 2
-        final_refined = np.where(vote_count > consensus_threshold, 
+        # Use the median suggestion of identifying models
+        final_refined = np.where(vote_count > 0, 
                                  np.median(individual_results, axis=0), 
                                  data)
         return final_refined
