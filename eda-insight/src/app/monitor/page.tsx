@@ -483,7 +483,7 @@ export default function ForensicWorkstationMonolith() {
                 SCR_Peaks: window.filter(v => v > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS).length,
                 SCR_Amp: Math.max(...window) - Math.min(...window),
                 Slope_Max: Math.max(...diffs, 0),
-                HF_Energy: entropy * 1.5, // Proxy for HF energy
+
                 Entropy: entropy,
                 Motion: edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? 1.0 : 0.0,
                 Timestamp: new Date().toLocaleString('en-GB')

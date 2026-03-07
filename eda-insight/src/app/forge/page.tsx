@@ -18,7 +18,7 @@ import * as THREE from 'three';
 interface EDAData {
   User_ID: string; Age: string; Gen: string; BSR: string; Win: string;
   EDA_Mean: number; EDA_Std: number; SCL_Tonic: number; SCR_Peaks: number;
-  SCR_Amp: number; Slope_Max: number; HF_Energy: number; Entropy: number;
+  SCR_Amp: number; Slope_Max: number; Entropy: number;
   Motion: number;
 }
 
@@ -125,7 +125,7 @@ export default function ForensicForge() {
           EDA_Mean: parseFloat(c[5]) || 0, EDA_Std: parseFloat(c[6]) || 0,
           SCL_Tonic: parseFloat(c[7]) || 0, SCR_Peaks: parseFloat(c[8]) || 0,
           SCR_Amp: parseFloat(c[9]) || 0, Slope_Max: parseFloat(c[10]) || 0,
-          HF_Energy: parseFloat(c[11]) || 0, Entropy: parseFloat(c[12]) || 0,
+          Entropy: parseFloat(c[11]) || 0,
           Motion: parseInt(c[13]) || 0
         };
       });
@@ -374,7 +374,7 @@ export default function ForensicForge() {
                           <th className="p-6 text-center text-slate-500 uppercase tracking-widest">Conductance</th>
                           <th className="p-6 text-center text-slate-500 uppercase tracking-widest">Peaks</th>
                           <th className="p-6 text-center text-slate-500 uppercase tracking-widest">Entropy</th>
-                          <th className="p-6 text-center text-slate-500 uppercase tracking-widest">Energy</th>
+
                           <th className="p-6 text-right text-slate-500 uppercase tracking-widest">Status</th>
                         </tr>
                       </thead>
@@ -394,7 +394,7 @@ export default function ForensicForge() {
                             </td>
                             <td className="p-5 text-center font-mono opacity-70">{row.SCR_Peaks}</td>
                             <td className="p-5 text-center font-mono text-purple-400">{row.Entropy.toFixed(3)}</td>
-                            <td className="p-5 text-center font-mono opacity-50">{row.HF_Energy.toFixed(4)}</td>
+
                             <td className="p-5 text-right">
                               {showCleansed && row.Motion === 1 ? (
                                 <span className="text-emerald-500 font-black flex items-center justify-end gap-2 text-[9px] animate-pulse">
