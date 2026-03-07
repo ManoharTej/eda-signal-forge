@@ -102,6 +102,7 @@ export default function ForensicForge() {
   const [isCleaning, setIsCleaning] = useState(false);
   const [showCleansed, setShowCleansed] = useState(false);
   const [show3DLegend, setShow3DLegend] = useState(true);
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   const [mlMode, setMlMode] = useState<'solo' | 'hybrid'>('solo');
   const [selectedTechs, setSelectedTechs] = useState<string[]>(['cul']);
@@ -185,6 +186,7 @@ export default function ForensicForge() {
       }));
 
       setData(updatedData);
+      setBackendError(null); // Clear any previous error on success
 
       const newTrial = {
         id: auditReports.length + 1,
@@ -198,6 +200,7 @@ export default function ForensicForge() {
       setTimeout(() => { setIsCleaning(false); setShowCleansed(true); }, 1500);
     } catch (err) {
       console.error("ML Error:", err);
+      setBackendError("Backend Unreachable — Start the Python server first (python main.py)");
       // Record a failed trial so the Auditor can provide feedback
       const failedTrial = {
         id: auditReports.length + 1,
@@ -208,7 +211,8 @@ export default function ForensicForge() {
         error: true
       };
       setAuditReports(prev => [failedTrial, ...prev]);
-      setTimeout(() => { setIsCleaning(false); setShowCleansed(true); }, 2500);
+      setIsCleaning(false);
+      // DO NOT set showCleansed — backend must respond for graphs to appear
     }
   };
 
@@ -344,13 +348,20 @@ export default function ForensicForge() {
                 </div>
               </div>
 
-              <div className="flex gap-3">
-                <button onClick={() => setView3D(!view3D)} className="px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/10 transition-all bg-white/5 hover:bg-blue-600 flex items-center gap-3">
-                  {view3D ? <LayoutPanelTop size={14} /> : <Box size={14} />} {view3D ? "2D View" : "3D View"}
-                </button>
-                <button onClick={triggerClean} disabled={isCleaning} className="px-7 py-2.5 bg-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:scale-105 transition-all flex items-center gap-3">
-                  {isCleaning ? <Sparkles className="animate-spin" size={14} /> : <Zap size={14} />} {isCleaning ? "Computing..." : "Run Reconstruct"}
-                </button>
+              <div className="flex flex-col items-end gap-2">
+                {backendError && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/30 rounded-xl text-[9px] font-black text-red-400 uppercase tracking-widest animate-pulse">
+                    <span>⚠</span> {backendError}
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button onClick={() => setView3D(!view3D)} className="px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border border-white/10 transition-all bg-white/5 hover:bg-blue-600 flex items-center gap-3">
+                    {view3D ? <LayoutPanelTop size={14} /> : <Box size={14} />} {view3D ? "2D View" : "3D View"}
+                  </button>
+                  <button onClick={triggerClean} disabled={isCleaning} className="px-7 py-2.5 bg-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-[0_0_20px_rgba(59,130,246,0.4)] hover:scale-105 transition-all flex items-center gap-3">
+                    {isCleaning ? <Sparkles className="animate-spin" size={14} /> : <Zap size={14} />} {isCleaning ? "Computing..." : "Run Reconstruct"}
+                  </button>
+                </div>
               </div>
             </motion.header>
 
