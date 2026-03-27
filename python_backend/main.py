@@ -66,7 +66,6 @@ class TelemetryLog(BaseModel):
     SCR_Peaks: int
     SCR_Amp: float
     Slope_Max: float
-    HF_Energy: float
     Entropy: float
     Motion: float
     Timestamp: str

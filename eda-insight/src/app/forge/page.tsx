@@ -127,7 +127,7 @@ export default function ForensicForge() {
           SCL_Tonic: parseFloat(c[7]) || 0, SCR_Peaks: parseFloat(c[8]) || 0,
           SCR_Amp: parseFloat(c[9]) || 0, Slope_Max: parseFloat(c[10]) || 0,
           Entropy: parseFloat(c[11]) || 0,
-          Motion: parseInt(c[13]) || 0
+          Motion: parseInt(c[12]) || 0
         };
       });
       setData(parsed);
@@ -583,7 +583,7 @@ export default function ForensicForge() {
                               Score
                               <div className="absolute top-6 right-0 w-36 bg-[#7c3aed] border border-white/20 p-3 rounded-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none shadow-2xl z-50 text-[7px] text-white font-mono normal-case tracking-tight leading-relaxed">
                                 Neural Logic Weighting:<br />
-                                <span className="text-[10px] text-purple-200 mt-1 block">(Stab × 10) + Smooth</span>
+                                <span className="text-[10px] text-purple-200 mt-1 block">Artifact(30%) + Baseline(30%) + SCR(20%) + Continuity(20%)</span>
                               </div>
                             </th>
                           </tr>
@@ -592,8 +592,10 @@ export default function ForensicForge() {
                           {auditReports
                             .filter(r => !r.error)
                             .sort((a, b) => {
-                              const scoreA = a.total_score || (a.metrics.stability_index * 10 + a.metrics.smoothness_score);
-                              const scoreB = b.total_score || (b.metrics.stability_index * 10 + b.metrics.smoothness_score);
+                              // EDA Score: smoothness_score IS the 3-axis composite from backend
+                              // Add noise_suppression bonus to further separate algorithms
+                              const scoreA = a.total_score || (a.metrics.smoothness_score + Math.min(30, (a.metrics.noise_suppression || 0) * 0.5));
+                              const scoreB = b.total_score || (b.metrics.smoothness_score + Math.min(30, (b.metrics.noise_suppression || 0) * 0.5));
                               return scoreB - scoreA;
                             })
                             .map((r, idx) => (
@@ -613,7 +615,7 @@ export default function ForensicForge() {
                                 <td className="py-3 text-center text-amber-400/80">{r.metrics.smoothness_score?.toFixed(0)}%</td>
                                 <td className="py-3 text-center text-blue-400/80">{(r.metrics.noise_suppression / 10).toFixed(1)}k</td>
                                 <td className="py-3 text-right text-white pr-3 font-black text-[10px] group-hover:text-emerald-400 transition-colors">
-                                  {(r.total_score || (r.metrics.stability_index * 10 + r.metrics.smoothness_score)).toFixed(1)}
+                                  {(r.total_score || (r.metrics.smoothness_score + Math.min(30, (r.metrics.noise_suppression || 0) * 0.5))).toFixed(1)}
                                 </td>
                               </tr>
                             ))}

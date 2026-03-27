@@ -78,14 +78,19 @@ const KERNEL_CONFIG = {
   Y_AXIS_MIN: 0,
   Y_AXIS_CEILING: 12,
   MATRIX_UPDATE_INTERVAL: 5000,
-  ARTIFACT_THRESHOLD_μS: 2.0, // HYPER-SENSITIVE DETECTION
-  BASE_BASELINE_μS: 0.8434,
+  // EDA-CORRECT: Artifact threshold is NOT a fixed value.
+  // Real EDA artifacts = sudden jumps > 2.5σ above the rolling baseline.
+  // This constant is now used as the SIGMA multiplier, not a fixed μS cutoff.
+  ARTIFACT_SIGMA: 2.5,
+  // EDA-CORRECT: Typical resting baseline for controlled lab EDA (Boucsein 2012)
+  BASE_BASELINE_μS: 2.0,
   PDF_ACCENT_RGB: [59, 130, 246] as [number, number, number],
+  // EDA-CORRECT: Verdict thresholds calibrated to full 0.5–20 μS human range
   VERDICT_THRESHOLDS: {
-    CRITICAL: 8.0,
-    HIGH: 5.5,
-    ELEVATED: 3.5,
-    NOMINAL: 1.5,
+    CRITICAL: 12.0,   // Extreme sympathetic overload
+    HIGH:      7.0,   // Significant stress response
+    ELEVATED:  4.5,   // Moderate arousal / engagement
+    NOMINAL:   2.0,   // Calm, normal baseline
     ENTROPY_VOLATILE: 1.25
   },
   THEME: {
@@ -213,7 +218,7 @@ export default function ForensicWorkstationMonolith() {
       };
     } catch (err) {
       // --- FAILSAFE LOGIC (Simulated ML) ---
-      const simulated = val < KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? val : 0.8 + (Math.random() * 0.2);
+      const simulated = val < KERNEL_CONFIG.BASE_BASELINE_μS * 2 ? val : 0.8 + (Math.random() * 0.2);
       return {
         refined: simulated,
         metrics: { smoothness_score: 50, noise_suppression: 0, stability_index: 5 }
@@ -439,7 +444,18 @@ export default function ForensicWorkstationMonolith() {
             // Sync the refined graph buffer with the new ML result
             setPhasicRefinedBuffer(prev => [...prev, refined].slice(-KERNEL_CONFIG.GRAPH_BUFFER_LIMIT));
 
-            const meanVal = phasicRawBuffer.reduce((a, b) => a + b, 0) / phasicRawBuffer.length;
+            // EDA-CORRECT ARTIFACT DETECTION (hoisted to outer scope):
+            // Threshold = rolling mean + 2.5σ (Benedek & Kaernbach 2010)
+            // Adapts to whatever EDA range the subject has — NOT a fixed μS cutoff
+            const bufferMean = phasicRawBuffer.length > 0
+              ? phasicRawBuffer.reduce((a, b) => a + b, 0) / phasicRawBuffer.length
+              : KERNEL_CONFIG.BASE_BASELINE_μS;
+            const bufferStd = phasicRawBuffer.length > 1
+              ? Math.sqrt(phasicRawBuffer.reduce((a, b) => a + Math.pow(b - bufferMean, 2), 0) / phasicRawBuffer.length)
+              : 0.5;
+            const adaptiveThreshold = bufferMean + KERNEL_CONFIG.ARTIFACT_SIGMA * Math.max(bufferStd, 0.1);
+
+            const meanVal = bufferMean;
             const frame: ForensicDataPoint = {
               id: Math.random().toString(36).substr(2, 6),
               raw_μS: edaInput,
@@ -448,7 +464,7 @@ export default function ForensicWorkstationMonolith() {
               mean: meanVal,
               signalEntropy: entropy,
               stabilityIndex: mlResult.metrics.stability_index,
-              isArtifact: edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS,
+              isArtifact: edaInput > adaptiveThreshold,
               timestamp: new Date().toLocaleTimeString(),
               epoch: timeRefMark
             };
@@ -467,7 +483,7 @@ export default function ForensicWorkstationMonolith() {
             // --- AUTOMATED ML DATA LOGGING PROTOCOL ---
             const logToDatabase = async () => {
               const window = phasicRawBuffer.slice(-30);
-              const m = phasicRawBuffer.reduce((a, b) => a + b, 0) / phasicRawBuffer.length;
+              const m = bufferMean;  // reuse already-computed mean
               const variance = phasicRawBuffer.reduce((a, b) => a + Math.pow(b - m, 2), 0) / phasicRawBuffer.length;
               const diffs = window.slice(1).map((v, i) => Math.abs(v - window[i]));
 
@@ -480,12 +496,12 @@ export default function ForensicWorkstationMonolith() {
                 EDA_Mean: m,
                 EDA_Std: Math.sqrt(variance),
                 SCL_Tonic: m,
-                SCR_Peaks: window.filter(v => v > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS).length,
+                SCR_Peaks: window.filter(v => v > adaptiveThreshold).length,
                 SCR_Amp: Math.max(...window) - Math.min(...window),
                 Slope_Max: Math.max(...diffs, 0),
 
                 Entropy: entropy,
-                Motion: edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? 1.0 : 0.0,
+                Motion: edaInput > adaptiveThreshold ? 1.0 : 0.0,
                 Timestamp: new Date().toLocaleString('en-GB')
               };
 
@@ -501,7 +517,7 @@ export default function ForensicWorkstationMonolith() {
             logToDatabase();
 
             lastTableUpdate.current = timeRefMark;
-            pushVaultLog(`Matrix Latch: ${edaInput.toFixed(4)}μS [STABILITY: ${mlResult.metrics.stability_index.toFixed(1)}] // Persistence: SECTOR_CSV`, edaInput > KERNEL_CONFIG.ARTIFACT_THRESHOLD_μS ? 'WARN' : 'DATA');
+            pushVaultLog(`Matrix Latch: ${edaInput.toFixed(4)}μS [THRESH: ${adaptiveThreshold.toFixed(3)}μS] // Persistence: SECTOR_CSV`, edaInput > adaptiveThreshold ? 'WARN' : 'DATA');
           }
         } else if (dataPayload && dataPayload.handshake !== sessionCode && stage === 1) {
           pushVaultLog("Link Volatility: Sync Failure.", 'WARN');
