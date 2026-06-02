@@ -17,12 +17,12 @@ By separating visuals from heavy-duty vector operations, Signal Forge coordinate
 ### 1. Central Workstation Gateway
 A clinical, glassmorphic landing page styled with responsive HSL glow-trails and 3D GSAP mouse-tilt physics. Allows researchers to toggle between live WebSocket streams and batch CSV uploads.
 
-![Central Workstation Gateway](./screenshots/home.png)
+![Central Workstation Gateway](./screenshots/home_v2.png)
 
 ### 2. Forensic ML Laboratory (Dashboard)
 The core signal playground. Upload high-frequency CSV traces and select from a suite of 7 unsupervised machine learning models to identify and heal motion artifacts in real-time.
 
-![Forensic ML Laboratory](./screenshots/dashboard.png)
+![Forensic ML Laboratory (Dashboard)](./screenshots/dashboard_v2.png)
 
 ### 3. WebGL 3D Biosensor Cloud (Results)
 Plots high-density multi-attribute bio-signals in an interactive 3D WebGL scatter space using React Three Fiber, rendering signal baseline (SCL) and phasic spikes (SCR) in real-time.
