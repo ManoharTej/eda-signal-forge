@@ -1,0 +1,45 @@
+graph TB
+    %% Styling definitions
+    classDef userStyle fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    classDef mobileStyle fill:#0f172a,stroke:#10b981,stroke-width:2px,color:#fff,stroke-dasharray: 5 5;
+    classDef webStyle fill:#020617,stroke:#3b82f6,stroke-width:2px,color:#fff;
+    classDef apiStyle fill:#0f172a,stroke:#8b5cf6,stroke-width:2px,color:#fff;
+    classDef dbStyle fill:#090d16,stroke:#f59e0b,stroke-width:2px,color:#fff;
+
+    %% Nodes structure
+    subgraph Subject_Node ["Subject Node (Mobile/Hardware)"]
+        User["👤 Research Subject"]:::userStyle
+        MobileApp["📱 Expo Mobile Client"]:::mobileStyle
+        SimEngine["⚙️ ML-Simulation Engine (Touch Pressure)"]:::mobileStyle
+    end
+
+    subgraph Workstation_Cluster ["Workstation Cluster (Next.js 14 Dashboard)"]
+        Dashboard["💻 Next.js Dashboard Workstation"]:::webStyle
+        FramerMotion["✨ Spring-Based Animations (GSAP / Framer)"]:::webStyle
+        ThreeFiber["📊 R3F 3D Plotting Layer"]:::webStyle
+        PdfGenerator["📄 jsPDF Report Generator"]:::webStyle
+    end
+
+    subgraph Neural_Core ["Neural Processing Core (FastAPI Backend)"]
+        FastAPI["⚡ FastAPI Server Node"]:::apiStyle
+        MLSuite["🤖 7 Unsupervised ML Specialists"]:::apiStyle
+        Auditor["🧠 Forensic Auditor (Shannon Entropy Stability)"]:::apiStyle
+    end
+
+    subgraph Storage_Vault ["Storage Vault (Temporal CSV Layer)"]
+        CsvVault["📂 Append-Only Telemetry CSV Log (13-Attributes)"]:::dbStyle
+        JSONPassport["🔒 PII Subject Passport (JSON Flat-File)"]:::dbStyle
+    end
+
+    %% Flow lines
+    User -->|"1. Generates conductance data"| MobileApp
+    SimEngine -.->|"Simulates biometric fluctuations"| MobileApp
+    MobileApp -->|"2. Dual-Protocol streaming (REST / WebSockets)"| Dashboard
+    Dashboard -->|"3. Trigger 'Matrix Latch' every 5s"| FastAPI
+    FastAPI -->|"4. Run unsupervised analysis"| MLSuite
+    MLSuite -->|"5. Calculate stability scores"| Auditor
+    FastAPI -->|"6. Store 13-attribute epoch"| CsvVault
+    JSONPassport <-->|"Link via anonymized User_ID"| CsvVault
+    FastAPI -->|"7. Return refined trace & metrics"| Dashboard
+    Dashboard -->|"Render 3D scatter/2D plots"| ThreeFiber
+    Dashboard -->|"Generate clinical export"| PdfGenerator

@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+:root {
+  /* CHANGED TO FORENSIC DARK MODE BY DEFAULT */
+  --background: #010409; 
+  --foreground: #ededed;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Ensure body respects the forensic background */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Custom Scrollbar for your Forensic Matrix Table */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0d1117;
+}
+::-webkit-scrollbar-thumb {
+  background: #3b82f633;
+  border-radius: 10px;
+}
