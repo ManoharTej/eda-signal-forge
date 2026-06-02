@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser({
         uid: "mock-researcher-uid",
         email: "manohar.tej@forge.io",
-        displayName: "Dr. Manohar Tej",
+        displayName: "Manohar Tej",
         emailVerified: true,
         isAnonymous: false,
         metadata: {},

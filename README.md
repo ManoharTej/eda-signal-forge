@@ -102,7 +102,7 @@ npm install --legacy-peer-deps
 # Start dev server
 npm run dev
 ```
-Open `http://localhost:3000` in your browser. Add `?mock_auth=true` to bypass credentials and log in automatically as `Dr. Manohar Tej`.
+Open `http://localhost:3000` in your browser. Add `?mock_auth=true` to bypass credentials and log in automatically as `Manohar Tej`.
 
 ### 3. Boot the Subject Terminal (Mobile app)
 Requires Expo Go to run the edge simulator or connect physical electrodes:
@@ -116,6 +116,24 @@ npm install
 # Launch Expo
 npx expo start
 ```
+
+---
+
+## 📡 Autonic Telemetry Live Ingestion
+
+The telemetry sub-system is built for raw high-frequency data streaming. 
+- **WebSocket Streaming Core**: Ingests real-time micro-siemens (μS) sensor feeds over low-latency WebSockets.
+- **Tonic/Phasic Waveform Separation**: Splits SCL (slow-moving baseline skin conductance) from SCR (fast sympathetic arousal bursts) using a vectorized rolling low-pass filter.
+- **Live Haptic Feedback**: Transmits tactile connection locks and connection-lost alerts back to the edge client using the Expo Haptics API.
+
+---
+
+## 📄 Forensic Report PDF Synthesis
+
+The workstation includes an automated reporting engine powered by `jsPDF` and `html2canvas` to deliver publication-grade research logs:
+- **Dual Trace Rendering**: Embeds both raw (unfiltered) and refined (cleaned) traces side-by-side to demonstrate artifact suppression performance.
+- **Auditor Verdict Section**: Incorporates the final Stability Index and Smoothness Scores computed by the backend.
+- **Relational Integrity**: Automatically stamps the output document with the anonymized `User_ID` and chronological timestamp metadata.
 
 ---
 
